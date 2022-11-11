@@ -13,7 +13,7 @@ async function GetVasttrafikAccessToken() {
 	return (await data.json()).access_token as string;
 }
 
-let ACCESS_TOKEN = await GetVasttrafikAccessToken();
+let ACCESS_TOKEN = "";
 
 const AXIOS_CONFIG: AxiosRequestConfig = {
 	httpsAgent: {
@@ -40,6 +40,11 @@ export class BaseService {
 	constructor(url: string, parameter?: string) {
 		if (parameter) this.url = url + `/${parameter}`;
 		else this.url = url;
+		if (ACCESS_TOKEN === "") {
+			GetVasttrafikAccessToken().then(resp => {
+				ACCESS_TOKEN = resp;
+			});
+		}
 	}
 
 	async Get<T>() {
