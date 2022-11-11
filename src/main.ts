@@ -5,6 +5,8 @@ import { createPinia } from "pinia";
 import quasarLang from "quasar/lang/sv";
 import quasarIconSet from "quasar/icon-set/svg-mdi-v6";
 
+import "animate.css";
+
 import "@quasar/extras/mdi-v6/mdi-v6.css";
 import "quasar/src/css/index.sass";
 
