@@ -118,7 +118,7 @@
 		});
 	}
 	const cleanUpDeparted = async () => {
-		if (departureBoard === undefined || departureBoard.value!.Departure.length <= 0) {
+		if (departureBoard === undefined || departures.value.length <= 3) {
 			await timeTableStore.getDomkyrkandDepartures();
 		}
 		removeAlreadyDeparted();
