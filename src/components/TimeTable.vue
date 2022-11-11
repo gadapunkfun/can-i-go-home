@@ -85,8 +85,7 @@
 
 	const cleanDepartureFunc = () => {
 		if (departureBoardA && departureBoardA.value) {
-			const currentTime = new Date("2022-11-10T10:10:00");
-
+			const currentTime = new Date();
 			const filtered = departureBoardA.value.Departure.filter(d => {
 				const departureTime = new Date();
 				departureTime.setHours(parseInt(d.time.split(":")[0]));
@@ -103,7 +102,7 @@
 	onMounted(async () => {
 		await timeTableStore.setSortedDeparturesA();
 		await timeTableStore.setSortedDeparturesB();
-		// intervalId.value = setInterval(cleanDepartureFunc, 5000);
+		intervalId.value = setInterval(cleanDepartureFunc, 5000);
 	});
 
 	onUnmounted(() => {
