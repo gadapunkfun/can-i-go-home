@@ -1,4 +1,5 @@
 <template>
+	<h3 class="q-my-none q-px-md q-pt-md q-pb-none text-white">{{ currentTime }}</h3>
 	<div class="row justify-between q-px-md">
 		<h3 class="text-positive q-mb-auto">Domkyrkan A</h3>
 		<q-icon class="text-h1 text-positive" name="mdi-bus-stop-uncovered" />
@@ -65,6 +66,7 @@
 	const timeTableStore = useTimeTableStore();
 	const { departureBoardA, departureBoardB, sortedDeparturesA, sortedDeparturesB } = storeToRefs(useTimeTableStore());
 	const intervalId = ref<number | null>(null);
+	const currentTime = ref<string>();
 
 	const getHumanReadableDepartureTime = (departureTime: string) => {
 		const currentDate = new Date();
@@ -76,6 +78,10 @@
 		if (departsInInMin <= 0) return "Is leaving or has left...";
 		return `Leaves in ${departsInInMin} minutes`;
 	};
+
+	setInterval(() => {
+		currentTime.value = new Date().toLocaleTimeString();
+	}, 1000);
 
 	const cleanDepartureFunc = () => {
 		if (departureBoardA && departureBoardA.value) {
