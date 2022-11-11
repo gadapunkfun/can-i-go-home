@@ -1,34 +1,7 @@
 import { BaseService } from "./BaseService";
+import type { DepartureBoard } from "@/models/DepartureBoard";
 
 const BASE_URL = "https://api.vasttrafik.se/bin/rest.exe/v2";
-
-export interface DepartureBoard {
-	noNamespaceSchemaLocation: string;
-	servertime: string;
-	serverdate: string;
-	Departure: Departure[];
-}
-
-export interface Departure {
-	name: string;
-	sname: string;
-	accessibility?: string;
-	journeyNumber: string;
-	type: string;
-	stopid: string;
-	stop: string;
-	time: string;
-	date: string;
-	journeyid: string;
-	direction: string;
-	track: string;
-	fgColor: string;
-	bgColor: string;
-	stroke: string;
-	journeyDetailRef: {
-		ref: string;
-	};
-}
 
 export async function GetDomkyrkanDepartures() {
 	// "9022014002130001" Domkyrkan, Gothenburg A
