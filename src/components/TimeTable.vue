@@ -32,9 +32,16 @@
 							{{ departure.direction }}
 						</h4>
 					</div>
-					<h4 class="q-pr-md" :style="'color: ' + departure.fgColor">
-						{{ getHumanReadableDepartureTime(departure.time) }}
-					</h4>
+					<div class="row">
+						<q-icon
+							class="text-h2 q-my-auto q-pr-md"
+							:name="departure.type === 'BUS' ? 'mdi-bus-side' : 'mdi-tram'"
+							:style="'color: ' + departure.fgColor"
+						></q-icon>
+						<h4 class="q-pr-md" :style="'color: ' + departure.fgColor">
+							{{ getHumanReadableDepartureTime(departure.time) }}
+						</h4>
+					</div>
 				</div>
 			</q-card-section>
 		</q-card>
@@ -60,9 +67,16 @@
 							{{ departure.direction }}
 						</h4>
 					</div>
-					<h4 class="q-pr-md" :style="'color: ' + departure.fgColor">
-						{{ getHumanReadableDepartureTime(departure.time) }}
-					</h4>
+					<div class="row">
+						<q-icon
+							class="text-h2 q-my-auto q-pr-md"
+							:name="departure.type === 'BUS' ? 'mdi-bus-side' : 'mdi-tram'"
+							:style="'color: ' + departure.fgColor"
+						></q-icon>
+						<h4 class="q-pr-md" :style="'color: ' + departure.fgColor">
+							{{ getHumanReadableDepartureTime(departure.time) }}
+						</h4>
+					</div>
 				</div>
 			</q-card-section>
 		</q-card>
