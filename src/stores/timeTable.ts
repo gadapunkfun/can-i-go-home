@@ -17,7 +17,7 @@ export const useTimeTableStore = defineStore("timeTable", {
 	}),
 	actions: {
 		async getDomkyrkandDepartures() {
-			if (this.$state.departureBoard === undefined || this.$state.departures.length <= 3) {
+			if (this.$state.departureBoard === undefined || this.$state.departures.length <= 6) {
 				const resp = await GetDomkyrkanDepartures();
 				if (resp.isSuccessStatusCode && resp.result) {
 					this.$state.departureBoard = resp.result.DepartureBoard;
