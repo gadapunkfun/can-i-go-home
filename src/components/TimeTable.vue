@@ -127,7 +127,7 @@
 	onMounted(async () => {
 		await timeTableStore.getDomkyrkandDepartures();
 		cleanUpDeparted();
-		intervalId.value = setInterval(cleanUpDeparted, 1000 * 60);
+		intervalId.value = window.setInterval(cleanUpDeparted, 1000 * 60);
 	});
 
 	onUnmounted(() => {
