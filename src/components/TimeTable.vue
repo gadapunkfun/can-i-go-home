@@ -60,14 +60,20 @@
 
 <script setup lang="ts">
 	import { storeToRefs } from "pinia";
-	import { ref, onMounted, onUnmounted } from "vue";
+	import { ref, onMounted, onUnmounted, computed } from "vue";
 	import { useTimeTableStore } from "@/stores/timeTable";
 
 	const timeTableStore = useTimeTableStore();
-	const { departureBoardA, departureBoardB, sortedDeparturesA, sortedDeparturesB } = storeToRefs(useTimeTableStore());
+	const { departureBoard, departures, isLoading } = storeToRefs(useTimeTableStore());
 	const intervalId = ref<number | null>(null);
 	const currentTime = ref<string>();
 
+	const departuresA = computed(() => {
+		return departures.value.filter(d => d.track === "A");
+	});
+	const departuresB = computed(() => {
+		return departures.value.filter(d => d.track === "B");
+	});
 	const getHumanReadableDepartureTime = (departureTime: string) => {
 		const currentDate = new Date();
 		const departureDate = new Date();
@@ -80,29 +86,36 @@
 	};
 
 	setInterval(() => {
-		currentTime.value = new Date().toLocaleTimeString();
+		currentTime.value = new Date().toLocaleTimeString("se-SV", {
+			hour: "2-digit",
+			minute: "2-digit",
+			second: "numeric"
+		});
 	}, 1000);
 
-	const cleanDepartureFunc = () => {
-		if (departureBoardA && departureBoardA.value) {
-			const currentTime = new Date();
-			const filtered = departureBoardA.value.Departure.filter(d => {
-				const departureTime = new Date();
-				departureTime.setHours(parseInt(d.time.split(":")[0]));
-				departureTime.setMinutes(parseInt(d.time.split(":")[1]));
-				return departureTime.getTime() > currentTime.getTime();
-			});
-			timeTableStore.$patch(state => {
-				state.sortedDeparturesA = filtered;
-			});
-			console.log(filtered);
+	function removeAlreadyDeparted() {
+		const currentDate = new Date();
+		const upcomingDepartures = departureBoard!.value!.Departure.filter(d => {
+			const departureTime = new Date();
+			departureTime.setHours(parseInt(d.time.split(":")[0]));
+			departureTime.setMinutes(parseInt(d.time.split(":")[1]));
+			return departureTime.getTime() > currentDate.getTime();
+		});
+		timeTableStore.$patch(state => {
+			state.departures = upcomingDepartures;
+		});
+	}
+	const cleanUpDeparted = async () => {
+		if (departureBoard === undefined || departureBoard.value!.Departure.length <= 0) {
+			await timeTableStore.getDomkyrkandDepartures();
 		}
+		removeAlreadyDeparted();
 	};
 
 	onMounted(async () => {
-		await timeTableStore.setSortedDeparturesA();
-		await timeTableStore.setSortedDeparturesB();
-		intervalId.value = setInterval(cleanDepartureFunc, 5000);
+		await timeTableStore.getDomkyrkandDepartures();
+		cleanUpDeparted();
+		intervalId.value = setInterval(cleanUpDeparted, 1000 * 60);
 	});
 
 	onUnmounted(() => {

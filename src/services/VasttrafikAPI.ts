@@ -30,12 +30,10 @@ export interface Departure {
 	};
 }
 
-export async function GetDomkyrkanToBruns() {
-	return await GetDepartureFromStop("9022014002130001"); // Domkyrkan, Gothenburg A
-}
-
-export async function GetDomkyrkanToGron() {
-	return await GetDepartureFromStop("9022014002130002"); // Domkyrkan, Gothenburg B
+export async function GetDomkyrkanDepartures() {
+	// "9022014002130001" Domkyrkan, Gothenburg A
+	// "9022014002130002" Domkyrkan, Gothenburg B
+	return await GetDepartureFromStop("9022014002130001");
 }
 
 function GetDepartureFromStop(stopId: string) {

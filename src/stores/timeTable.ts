@@ -1,41 +1,30 @@
 import { defineStore } from "pinia";
-import { prop, sortBy } from "ramda";
-import { GetDomkyrkanToBruns, GetDomkyrkanToGron, type Departure, type DepartureBoard } from "@/services/VasttrafikAPI";
+import type { Departure } from "@/models/Departure";
+import type { DepartureBoard } from "@/models/DepartureBoard";
+import { GetDomkyrkanDepartures } from "@/services/VasttrafikAPI";
 
 interface State {
-	departureBoardA?: DepartureBoard;
-	departureBoardB?: DepartureBoard;
-	sortedDeparturesA: Departure[];
-	sortedDeparturesB: Departure[];
+	departureBoard?: DepartureBoard;
+	departures: Departure[];
 	isLoading: boolean;
 }
 
 export const useTimeTableStore = defineStore("timeTable", {
 	state: (): State => ({
-		departureBoardA: undefined, // A Towards Brunsparken
-		departureBoardB: undefined, // B Towards Gronsaks
-		sortedDeparturesA: [] as Departure[], // A Towards Brunsparken
-		sortedDeparturesB: [] as Departure[], // B Towards Gronsaks
+		departureBoard: undefined,
+		departures: [] as Departure[],
 		isLoading: true
 	}),
 	actions: {
-		async setSortedDeparturesA() {
-			if (this.$state.departureBoardA === undefined) {
-				const resp = await GetDomkyrkanToBruns();
+		async getDomkyrkandDepartures() {
+			if (this.$state.departureBoard === undefined) {
+				const resp = await GetDomkyrkanDepartures();
 				if (resp.isSuccessStatusCode && resp.result) {
-					this.$state.departureBoardA = resp.result.DepartureBoard;
+					this.$state.departureBoard = resp.result.DepartureBoard;
 				}
 			}
-			this.$state.sortedDeparturesA = this.$state.departureBoardA!.Departure.filter(d => d.track === "A");
-		},
-		async setSortedDeparturesB() {
-			if (this.$state.departureBoardB === undefined) {
-				const resp = await GetDomkyrkanToGron();
-				if (resp.isSuccessStatusCode && resp.result) {
-					this.$state.departureBoardB = resp.result.DepartureBoard;
-				}
-			}
-			this.$state.sortedDeparturesB = this.$state.departureBoardB!.Departure.filter(d => d.track === "B");
+			this.$state.departures = this.$state.departureBoard!.Departure;
+			this.$state.isLoading = false;
 		}
 	}
 });
