@@ -1,5 +1,10 @@
 <template>
-	<h3 class="q-my-none q-px-md q-pt-md q-pb-none text-white">{{ currentTime }}</h3>
+	<h3
+		class="q-my-none q-px-md q-pt-md q-pb-none"
+		:class="{ candyCaneText: currentTheme === 'holiday', 'text-white': currentTheme === 'default' }"
+	>
+		{{ currentTime }}
+	</h3>
 	<q-card v-if="isLoading" flat square class="bg-transparent">
 		<q-card-section horizontal>
 			<div class="row justify-between full-width">
@@ -16,7 +21,7 @@
 		</div>
 		<q-card
 			class="q-my-xs animate__animated animate__flipInX animate__slow"
-			v-for="(departure, i) in departuresA"
+			v-for="(departure, i) in departuresGroupedA"
 			flat
 			square
 			:key="i"
@@ -39,7 +44,7 @@
 							:style="'color: ' + departure.fgColor"
 						></q-icon>
 						<h6 class="q-pr-md" :style="'color: ' + departure.fgColor">
-							{{ getHumanReadableDepartureTime(departure.departureTimes) }}
+							{{ getHumanReadableDepartureTime(departure.departureTimesFormatted) }}
 						</h6>
 					</div>
 				</div>
@@ -51,7 +56,7 @@
 		</div>
 		<q-card
 			class="q-my-xs"
-			v-for="(departure, i) in departuresB.slice(0, 6)"
+			v-for="(departure, i) in departuresGroupedB"
 			flat
 			square
 			:key="i"
@@ -73,58 +78,56 @@
 							:name="departure.type === 'BUS' ? 'mdi-bus-side' : 'mdi-tram'"
 							:style="'color: ' + departure.fgColor"
 						></q-icon>
-						<h4 class="q-pr-md" :style="'color: ' + departure.fgColor">
-							{{ getHumanReadableDepartureTime(departure.time) }}
-						</h4>
+						<h6 class="q-pr-md" :style="'color: ' + departure.fgColor">
+							{{ getHumanReadableDepartureTime(departure.departureTimesFormatted) }}
+						</h6>
 					</div>
 				</div>
 			</q-card-section>
 		</q-card>
 	</template>
+	<div v-if="currentTheme === 'christmas'" id="winterWonderland">
+		<q-icon v-for="(snowflake, i) in 50" :key="i" class="text-h1 text-white" name="mdi-snowflake mdi-rotate-315" />
+	</div>
 </template>
 
 <script setup lang="ts">
 	import { storeToRefs } from "pinia";
 	import { useRoute } from "vue-router";
+	import { values, groupBy, prop } from "ramda";
+	import { ref, onMounted, onUnmounted } from "vue";
 	import { useTimeTableStore } from "@/stores/timeTable";
-	import { ref, onMounted, onUnmounted, computed } from "vue";
 	import { QCard, QCardSection, QSkeleton, QIcon } from "quasar";
-	import type { DepartureGroupedDepartureTime } from "@/models/Departure";
+	import { DeparturesWithGroupedDepartureTime, type Departure } from "@/models/Departure";
 
 	const timeTableStore = useTimeTableStore();
-	const { departureBoard, departures, departuresGrouped, isLoading } = storeToRefs(useTimeTableStore());
+	const { departureBoard, departures, departuresGroupedA, departuresGroupedB, isLoading } = storeToRefs(
+		useTimeTableStore()
+	);
 	const intervalId = ref<number | null>(null);
 	const currentTime = ref<string>();
 	const currentTheme = ref<string>(
 		(useRoute().params.theme as string) === "" ? "default" : (useRoute().params.theme as string)
 	);
 
-	const departuresA = computed(() => {
-		return departuresGrouped.value.filter(d => d.track === "A");
-	});
-	const departuresB = computed(() => {
-		return departuresGrouped.value.filter(d => d.track === "B");
-	});
+	const formatDepartureTime = (time: string) => {
+		const currentDate = new Date();
+		const departureDate = new Date();
+		departureDate.setHours(parseInt(time.split(":")[0]));
+		departureDate.setMinutes(parseInt(time.split(":")[1]));
+		const departsInInMS = departureDate.getTime() - currentDate.getTime();
+		const departsInInMin = Math.round(departsInInMS / 60_000);
+		return departsInInMin;
+	};
 
-	const getHumanReadableDepartureTime = (departureTime: string[]) => {
-		if (departureTime.length > 0) {
-			const currentDate = new Date();
-			const departureDate = new Date();
-			departureDate.setHours(parseInt(departureTime[0].split(":")[0]));
-			departureDate.setMinutes(parseInt(departureTime[0].split(":")[1]));
-			const departsInInMS = departureDate.getTime() - currentDate.getTime();
-			const departsInInMin = Math.round(departsInInMS / 60_000);
-
-			if (departureTime.length > 1) {
-				const departureDateNext = new Date();
-				departureDateNext.setHours(parseInt(departureTime[0].split(":")[0]));
-				departureDateNext.setMinutes(parseInt(departureTime[0].split(":")[1]));
-				const departsNextInInMS = departureDate.getTime() - currentDate.getTime();
-				const departsNextInInMin = Math.round(departsNextInInMS / 60_000);
-				return `Leaves in ${departsInInMin} minutes, next one leaves in ${departsNextInInMin} minutes`;
+	const getHumanReadableDepartureTime = (departureTimesFormatted: number[]) => {
+		if (departureTimesFormatted) {
+			// return departure.departureTimesFormatted;
+			// return `Leaves in ${departsInInMin} minutes`;
+			if (departureTimesFormatted.length > 1) {
+				return `Leaves in ${departureTimesFormatted[0]} minutes, next one leaves in ${departureTimesFormatted[1]} minutes`;
 			} else {
-				if (departsInInMin <= 0) return "Is leaving or has left...";
-				return `Leaves in ${departsInInMin} minutes`;
+				return `Leaves in ${departureTimesFormatted[0]} minutes`;
 			}
 		} else {
 			return "This transport is done for the day";
@@ -141,7 +144,7 @@
 
 	function removeAlreadyDeparted() {
 		const currentDate = new Date();
-		const upComingDeparturesGrouped = departuresGrouped.value.map(d => {
+		const upComingDeparturesGrouped = departuresGroupedA.value.map(d => {
 			const upComingDepartures = d.departureTimes.filter(t => {
 				const departureTime = new Date();
 				departureTime.setHours(parseInt(d.time.split(":")[0]));
@@ -152,7 +155,7 @@
 			return d;
 		});
 		timeTableStore.$patch(state => {
-			state.departuresGrouped = upComingDeparturesGrouped;
+			state.departuresGroupedA = upComingDeparturesGrouped;
 		});
 	}
 	const cleanUpDeparted = async () => {
@@ -164,10 +167,23 @@
 
 	onMounted(async () => {
 		await timeTableStore.getDomkyrkandDepartures();
-		departures.value.forEach(d => {
-			const currentIndex = departuresGrouped.value.findIndex(dep => dep.sname === d.sname);
-			if (currentIndex >= 0) {
-		cleanUpDeparted();
+		const groupDeparturesFunc = (arr: Departure[]) => values(groupBy<Departure, string>(prop("sname"))(arr));
+		const departuresA = groupDeparturesFunc(departures.value.filter(d => d.track === "A"));
+		const departuresB = groupDeparturesFunc(departures.value.filter(d => d.track === "B"));
+		const createGroupedDepartures = (departures: Departure[][]) => {
+			const newDeparturesGrouped: DeparturesWithGroupedDepartureTime[] = [];
+			departures.forEach(departure => {
+				const newDepartureGrouped = new DeparturesWithGroupedDepartureTime(departure[0]);
+				if (departure.length > 1) {
+					departure.slice(1, departure.length).forEach(d => newDepartureGrouped.departureTimes.push(d.time));
+				}
+				newDeparturesGrouped.push(newDepartureGrouped);
+			});
+			return newDeparturesGrouped;
+		};
+		departuresGroupedA.value = createGroupedDepartures(departuresA);
+		departuresGroupedB.value = createGroupedDepartures(departuresB);
+		// cleanUpDeparted();
 		// intervalId.value = window.setInterval(cleanUpDeparted, 1000 * 60);
 	});
 
@@ -176,12 +192,33 @@
 	});
 </script>
 
-<style lang="css" scoped>
-	.tramEmblem {
-		width: 90px;
-		height: 90px;
-		font-size: 3rem;
-		text-align: center;
-		box-shadow: inset 0px 0px 0px 4px #ced4f4;
+<style lang="scss" scoped>
+	.candyCaneText {
+		--color1: #217427;
+		--color2: #ff0a0a;
+		font-weight: 700;
+		background: repeating-linear-gradient(
+			45deg,
+			var(--color1),
+			var(--color1) 30px,
+			var(--color2) 30px,
+			var(--color2) 60px
+		);
+		background-clip: text;
+		-webkit-background-clip: text;
+		color: transparent;
+	}
+
+	#winterWonderland {
+		width: 100%;
+		height: 100%;
+		position: absolute;
+		bottom: 0;
+		z-index: -1;
+		white-space: initial;
+		i {
+			width: 400px;
+			height: 100px;
+		}
 	}
 </style>
