@@ -14,7 +14,13 @@ export interface Departure {
 	fgColor: string;
 	bgColor: string;
 	stroke: string;
-	journeyDetailRef: {
+	rtDate?: string;
+	rtTime?: string;
+	JourneyDetailRef: {
 		ref: string;
 	};
+}
+
+export interface DepartureGroupedDepartureTime extends Departure {
+	departureTimes: string[];
 }

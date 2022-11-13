@@ -1,19 +1,21 @@
 import { defineStore } from "pinia";
-import type { Departure } from "@/models/Departure";
+import type { Departure, DepartureGroupedDepartureTime } from "@/models/Departure";
 import type { DepartureBoard } from "@/models/DepartureBoard";
 import { GetDomkyrkanDepartures } from "@/services/VasttrafikAPI";
 
 interface State {
-	departureBoard?: DepartureBoard;
-	departures: Departure[];
 	isLoading: boolean;
+	departures: Departure[];
+	departureBoard?: DepartureBoard;
+	departuresGrouped: DepartureGroupedDepartureTime[];
 }
 
 export const useTimeTableStore = defineStore("timeTable", {
 	state: (): State => ({
-		departureBoard: undefined,
-		departures: [] as Departure[],
-		isLoading: true
+		departures: [],
+		isLoading: true,
+		departuresGrouped: [],
+		departureBoard: undefined
 	}),
 	actions: {
 		async getDomkyrkandDepartures() {

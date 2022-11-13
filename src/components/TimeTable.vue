@@ -16,7 +16,7 @@
 		</div>
 		<q-card
 			class="q-my-xs animate__animated animate__flipInX animate__slow"
-			v-for="(departure, i) in departuresA.slice(0, 6)"
+			v-for="(departure, i) in departuresA"
 			flat
 			square
 			:key="i"
@@ -38,9 +38,9 @@
 							:name="departure.type === 'BUS' ? 'mdi-bus-side' : 'mdi-tram'"
 							:style="'color: ' + departure.fgColor"
 						></q-icon>
-						<h4 class="q-pr-md" :style="'color: ' + departure.fgColor">
-							{{ getHumanReadableDepartureTime(departure.time) }}
-						</h4>
+						<h6 class="q-pr-md" :style="'color: ' + departure.fgColor">
+							{{ getHumanReadableDepartureTime(departure.departureTimes) }}
+						</h6>
 					</div>
 				</div>
 			</q-card-section>
@@ -85,30 +85,50 @@
 
 <script setup lang="ts">
 	import { storeToRefs } from "pinia";
-	import { ref, onMounted, onUnmounted, computed } from "vue";
+	import { useRoute } from "vue-router";
 	import { useTimeTableStore } from "@/stores/timeTable";
+	import { ref, onMounted, onUnmounted, computed } from "vue";
+	import { QCard, QCardSection, QSkeleton, QIcon } from "quasar";
+	import type { DepartureGroupedDepartureTime } from "@/models/Departure";
 
 	const timeTableStore = useTimeTableStore();
-	const { departureBoard, departures, isLoading } = storeToRefs(useTimeTableStore());
+	const { departureBoard, departures, departuresGrouped, isLoading } = storeToRefs(useTimeTableStore());
 	const intervalId = ref<number | null>(null);
 	const currentTime = ref<string>();
+	const currentTheme = ref<string>(
+		(useRoute().params.theme as string) === "" ? "default" : (useRoute().params.theme as string)
+	);
 
 	const departuresA = computed(() => {
-		return departures.value.filter(d => d.track === "A");
+		return departuresGrouped.value.filter(d => d.track === "A");
 	});
 	const departuresB = computed(() => {
-		return departures.value.filter(d => d.track === "B");
+		return departuresGrouped.value.filter(d => d.track === "B");
 	});
 
-	const getHumanReadableDepartureTime = (departureTime: string) => {
-		const currentDate = new Date();
-		const departureDate = new Date();
-		departureDate.setHours(parseInt(departureTime.split(":")[0]));
-		departureDate.setMinutes(parseInt(departureTime.split(":")[1]));
-		const departsInInMS = departureDate.getTime() - currentDate.getTime();
-		const departsInInMin = Math.round(departsInInMS / 60_000);
-		if (departsInInMin <= 0) return "Is leaving or has left...";
-		return `Leaves in ${departsInInMin} minutes`;
+	const getHumanReadableDepartureTime = (departureTime: string[]) => {
+		if (departureTime.length > 0) {
+			const currentDate = new Date();
+			const departureDate = new Date();
+			departureDate.setHours(parseInt(departureTime[0].split(":")[0]));
+			departureDate.setMinutes(parseInt(departureTime[0].split(":")[1]));
+			const departsInInMS = departureDate.getTime() - currentDate.getTime();
+			const departsInInMin = Math.round(departsInInMS / 60_000);
+
+			if (departureTime.length > 1) {
+				const departureDateNext = new Date();
+				departureDateNext.setHours(parseInt(departureTime[0].split(":")[0]));
+				departureDateNext.setMinutes(parseInt(departureTime[0].split(":")[1]));
+				const departsNextInInMS = departureDate.getTime() - currentDate.getTime();
+				const departsNextInInMin = Math.round(departsNextInInMS / 60_000);
+				return `Leaves in ${departsInInMin} minutes, next one leaves in ${departsNextInInMin} minutes`;
+			} else {
+				if (departsInInMin <= 0) return "Is leaving or has left...";
+				return `Leaves in ${departsInInMin} minutes`;
+			}
+		} else {
+			return "This transport is done for the day";
+		}
 	};
 
 	setInterval(() => {
@@ -121,14 +141,18 @@
 
 	function removeAlreadyDeparted() {
 		const currentDate = new Date();
-		const upcomingDepartures = departureBoard!.value!.Departure.filter(d => {
-			const departureTime = new Date();
-			departureTime.setHours(parseInt(d.time.split(":")[0]));
-			departureTime.setMinutes(parseInt(d.time.split(":")[1]));
-			return departureTime.getTime() > currentDate.getTime();
+		const upComingDeparturesGrouped = departuresGrouped.value.map(d => {
+			const upComingDepartures = d.departureTimes.filter(t => {
+				const departureTime = new Date();
+				departureTime.setHours(parseInt(d.time.split(":")[0]));
+				departureTime.setMinutes(parseInt(d.time.split(":")[1]));
+				return departureTime.getTime() > currentDate.getTime();
+			});
+			d.departureTimes = upComingDepartures;
+			return d;
 		});
 		timeTableStore.$patch(state => {
-			state.departures = upcomingDepartures;
+			state.departuresGrouped = upComingDeparturesGrouped;
 		});
 	}
 	const cleanUpDeparted = async () => {
@@ -140,8 +164,11 @@
 
 	onMounted(async () => {
 		await timeTableStore.getDomkyrkandDepartures();
+		departures.value.forEach(d => {
+			const currentIndex = departuresGrouped.value.findIndex(dep => dep.sname === d.sname);
+			if (currentIndex >= 0) {
 		cleanUpDeparted();
-		intervalId.value = window.setInterval(cleanUpDeparted, 1000 * 60);
+		// intervalId.value = window.setInterval(cleanUpDeparted, 1000 * 60);
 	});
 
 	onUnmounted(() => {
