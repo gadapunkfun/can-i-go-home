@@ -110,13 +110,18 @@
 		(useRoute().params.theme as string) === "" ? "default" : (useRoute().params.theme as string)
 	);
 
+	const getDepartureText = (minutes: number) => {
+		return minutes <= 0 ? "This transport is departing or has departed..." : `Leaves in ${minutes} minutes`;
+	};
+
 	const getHumanReadableDepartureTime = (departureTimesFormatted: number[]) => {
 		if (departureTimesFormatted) {
-			const sumOfDepartureTimes = departureTimesFormatted.reduce((a, b) => a + b, 0);
-			if (departureTimesFormatted.length === 1 && sumOfDepartureTimes > 0) {
-				return `Leaves in ${departureTimesFormatted[0]} minutes`;
-			} else if (departureTimesFormatted.length > 1 && sumOfDepartureTimes > 0) {
-				return `Leaves in ${departureTimesFormatted[0]} minutes, next one leaves in ${departureTimesFormatted[1]} minutes`;
+			if (departureTimesFormatted.length === 1) {
+				return getDepartureText(departureTimesFormatted[0]);
+			} else if (departureTimesFormatted.length > 1) {
+				return `${getDepartureText(departureTimesFormatted[0])}, next one leaves in ${
+					departureTimesFormatted[1]
+				} minutes`;
 			} else {
 				return "This transport is departing or has departed...";
 			}
@@ -153,7 +158,11 @@
 		});
 	}
 	const cleanUpDeparted = async () => {
-		if (departureBoard === undefined || departures.value.length <= 6) {
+		const sumOfDepartureTimes = [
+			...departuresGroupedA.value.map(d => d.departureTimes.length),
+			...departuresGroupedB.value.map(d => d.departureTimes.length)
+		].reduce((a, b) => a + b, 0);
+		if (departureBoard === undefined || departures.value.length <= 6 || sumOfDepartureTimes <= 18) {
 			await timeTableStore.getDomkyrkandDepartures();
 		}
 		removeAlreadyDeparted();
