@@ -110,24 +110,15 @@
 		(useRoute().params.theme as string) === "" ? "default" : (useRoute().params.theme as string)
 	);
 
-	const formatDepartureTime = (time: string) => {
-		const currentDate = new Date();
-		const departureDate = new Date();
-		departureDate.setHours(parseInt(time.split(":")[0]));
-		departureDate.setMinutes(parseInt(time.split(":")[1]));
-		const departsInInMS = departureDate.getTime() - currentDate.getTime();
-		const departsInInMin = Math.round(departsInInMS / 60_000);
-		return departsInInMin;
-	};
-
 	const getHumanReadableDepartureTime = (departureTimesFormatted: number[]) => {
 		if (departureTimesFormatted) {
-			// return departure.departureTimesFormatted;
-			// return `Leaves in ${departsInInMin} minutes`;
-			if (departureTimesFormatted.length > 1) {
+			const sumOfDepartureTimes = departureTimesFormatted.reduce((a, b) => a + b, 0);
+			if (departureTimesFormatted.length === 1 && sumOfDepartureTimes > 0) {
+				return `Leaves in ${departureTimesFormatted[0]} minutes`;
+			} else if (departureTimesFormatted.length > 1 && sumOfDepartureTimes > 0) {
 				return `Leaves in ${departureTimesFormatted[0]} minutes, next one leaves in ${departureTimesFormatted[1]} minutes`;
 			} else {
-				return `Leaves in ${departureTimesFormatted[0]} minutes`;
+				return "This transport is departing or has departed...";
 			}
 		} else {
 			return "This transport is done for the day";
@@ -144,18 +135,21 @@
 
 	function removeAlreadyDeparted() {
 		const currentDate = new Date();
-		const upComingDeparturesGrouped = departuresGroupedA.value.map(d => {
-			const upComingDepartures = d.departureTimes.filter(t => {
-				const departureTime = new Date();
-				departureTime.setHours(parseInt(d.time.split(":")[0]));
-				departureTime.setMinutes(parseInt(d.time.split(":")[1]));
-				return departureTime.getTime() > currentDate.getTime();
+		const getUpComingDepartures = (departures: DeparturesWithGroupedDepartureTime[]) => {
+			return departures.map(departure => {
+				const upComingDepartures = departure.departureTimes.filter(t => {
+					const departureTime = new Date();
+					departureTime.setHours(parseInt(t.split(":")[0]));
+					departureTime.setMinutes(parseInt(t.split(":")[1]));
+					return departureTime.getTime() > currentDate.getTime();
+				});
+				departure.departureTimes = upComingDepartures;
+				return departure;
 			});
-			d.departureTimes = upComingDepartures;
-			return d;
-		});
+		};
 		timeTableStore.$patch(state => {
-			state.departuresGroupedA = upComingDeparturesGrouped;
+			state.departuresGroupedA = getUpComingDepartures(departuresGroupedA.value);
+			state.departuresGroupedB = getUpComingDepartures(departuresGroupedB.value);
 		});
 	}
 	const cleanUpDeparted = async () => {
@@ -183,8 +177,8 @@
 		};
 		departuresGroupedA.value = createGroupedDepartures(departuresA);
 		departuresGroupedB.value = createGroupedDepartures(departuresB);
-		// cleanUpDeparted();
-		// intervalId.value = window.setInterval(cleanUpDeparted, 1000 * 60);
+		cleanUpDeparted();
+		intervalId.value = window.setInterval(cleanUpDeparted, 1000 * 60);
 	});
 
 	onUnmounted(() => {

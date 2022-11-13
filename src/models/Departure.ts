@@ -23,8 +23,6 @@ export interface Departure {
 
 const formatDepartureTime = (time: string) => {
 	const currentDate = new Date();
-	currentDate.setHours(9);
-	currentDate.setMinutes(0);
 	const departureDate = new Date();
 	departureDate.setHours(parseInt(time.split(":")[0]));
 	departureDate.setMinutes(parseInt(time.split(":")[1]));
