@@ -1,6 +1,6 @@
 <template>
 	<h3
-		class="q-my-none q-px-md q-pt-md q-pb-none"
+		class="q-my-none q-px-md q-pt-md q-pb-none text-white"
 		:class="{ candyCaneText: currentTheme === 'holiday', 'text-white': currentTheme === 'default' }"
 	>
 		{{ currentTime }}
